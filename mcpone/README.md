@@ -6,6 +6,12 @@ commit `7e548e6eff172f38f97664afe7f7ce40db36c8d6`. The fork's default branch is
 The fork also returns failure if it cannot create any requested output renderer;
 upstream otherwise reports success after a denied output-file creation.
 
+The measured recommendation is the SIMD variant with `fast` models. A paired
+single-CPU comparison improved fast recognition by 1.32–1.37x without changing
+the output. Best models ran but were slower and less accurate on this small
+synthetic corpus; keep them optional rather than treating that as a general
+accuracy ranking. The scalar variant remains available for comparison.
+
 ## Build
 
 Requirements: CMake 3.22+, Make, a native C/C++ compiler, curl, tar, patch,
@@ -17,8 +23,8 @@ not implement. SDK 33 uses WASI 0.2.6 imports and works with that host.
 ```sh
 export WASI_SDK_PATH=/path/to/wasi-sdk-33.0
 export TESSERACT_BUILD_ROOT=/path/to/build-output
-./build-tesseract-wasi.sh wasip2
 ./build-tesseract-wasi.sh wasip2-simd
+./build-tesseract-wasi.sh wasip2
 ./build-tesseract-wasi.sh native
 bash mcpone/fetch-models.sh /path/to/models
 ```
@@ -50,14 +56,15 @@ This is a Preview2 component, not a Preview1 executable or an Emscripten module.
 ```sh
 wasmtime run -W exceptions=y \
   --dir /path/to/images::/images --dir /path/to/models::/models \
-  /path/to/build-output/wasip2/out/tesseract.wasm \
+  /path/to/build-output/wasip2-simd/out/tesseract.wasm \
   /images/input.png stdout --tessdata-dir /models/fast -l eng --oem 1 --psm 6
 ```
 
 Use `-l deu` for German, `-l eng+deu` for mixed text, and `/models/best` to
 select the optional float models. PSM 6 assumes one text block; use PSM 3
-for automatic page segmentation. The default upstream PSM is 3. Do not pass
-PSM 0, 1 or 12 without a compatible orientation model; OSD is not included.
+for automatic page segmentation. The default upstream PSM is 3. Orientation
+detection is disabled in this LSTM-only build: PSM 0 fails, and PSM 1/12 warn
+and fall back to PSM 3/11. Adding `osd.traineddata` alone cannot enable it.
 Language models contain dictionaries and LSTM weights, not an LLM. Identifiers
 can be wrong even when ordinary prose is correct. Check important numbers.
 
@@ -105,11 +112,18 @@ uv run mcpone/corpus.py /path/to/corpus
 uv run mcpone/benchmark.py \
   --build /path/to/build-output --models /path/to/models \
   --corpus /path/to/corpus --wasmtime /path/to/wasmtime \
-  --wasm-mode wasip2 --out /path/to/results --repeats 3
+  --wasm-mode wasip2-simd --out /path/to/results --repeats 3
 uv run mcpone/package.py \
   --build /path/to/build-output --models /path/to/models \
-  --mode wasip2 --wasm-tools /path/to/wasm-tools --out /path/to/packages
+  --mode wasip2-simd --wasm-tools /path/to/wasm-tools --out /path/to/packages
+uv run mcpone/summarize.py /path/to/results/results.json
+uv run mcpone/startup.py --wasmtime /path/to/wasmtime \
+  --wasm /path/to/packages/tesseract-wasip2-simd.wasm --out /path/to/startup.json
 ```
+
+For a paired compiler comparison on Linux, use `mcpone/compiler-compare.py`
+with `--build`, `--models`, `--corpus`, `--wasmtime`, `--cpu` and `--out`.
+It pins both variants to one selected CPU and alternates their run order.
 
 The helper separates model initialization, image decode, and recognition.
 The Python driver measures process wall time and individual child peak RSS

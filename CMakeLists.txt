@@ -53,7 +53,7 @@ string(REGEX REPLACE "^[^.]*\\.([^.]*)\\..*" "\\1" VERSION_MINOR
                      ${VERSION_PLAIN})
 string(REGEX REPLACE "^[^.]*\\.[^.]*\\.([0-9]*).*" "\\1" VERSION_PATCH
                      ${VERSION_PLAIN})
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
+if(NOT PACKAGE_VERSION AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/.git)
   execute_process(COMMAND git --git-dir ${CMAKE_CURRENT_SOURCE_DIR}/.git
                           describe --abbrev=4 OUTPUT_VARIABLE GIT_REV)
   string(REGEX REPLACE "\n$" "" PACKAGE_VERSION "${GIT_REV}")

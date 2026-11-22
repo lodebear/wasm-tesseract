@@ -70,7 +70,7 @@ def main():
     startup = {}
     for runtime, command in {
         "native": [str(native / "tesseract"), "--version"],
-        "wasm_fresh_compile": [args.wasmtime, "run", "-W", "exceptions=y", str(wasm / "tesseract.wasm"), "--version"],
+        "wasm_fresh_compile": [args.wasmtime, "run", "-C", "cache=n", "-W", "exceptions=y", str(wasm / "tesseract.wasm"), "--version"],
     }.items():
         startup[runtime] = [measured(command)[0] for _ in range(args.repeats)]
     cli_precompiled = args.out / "tesseract.cwasm"

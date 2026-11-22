@@ -35,6 +35,7 @@ licenses = {
     "libjpeg-turbo-README.md": args.build / "src/jpeg/README.md",
 }
 notices = {"notices/" + key: value.read_bytes() for key, value in licenses.items()}
+notices.update({"notices/runtime/" + path.name: path.read_bytes() for path in (root / "mcpone/notices").iterdir() if path.is_file()})
 
 
 def archive(filename, files):
@@ -57,7 +58,8 @@ for quality in ("fast", "best"):
     files = {f"tesseract.wasm.resources/tessdata/{quality}/{lang}.traineddata": (args.models / quality / f"{lang}.traineddata").read_bytes() for lang in ("eng", "deu")}
     files["notices/traineddata-Apache-2.0.txt"] = (root / "LICENSE").read_bytes()
     archive(f"tesseract-models-{quality}-eng-deu.tar.gz", files)
-manifest = {"upstream": "7e548e6eff172f38f97664afe7f7ce40db36c8d6", "mode": args.mode,
+manifest = {"upstream": "7e548e6eff172f38f97664afe7f7ce40db36c8d6",
+            "fork_commit": subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip(), "mode": args.mode,
             "unstripped_bytes": unstripped.stat().st_size, "files": {}}
 for file in sorted(args.out.iterdir()):
     if file.suffix not in (".gz", ".wasm"):

@@ -35,7 +35,7 @@ fetch libpng https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.50.tar.gz
 fetch jpeg https://github.com/libjpeg-turbo/libjpeg-turbo/archive/refs/tags/3.2.1.tar.gz 6f5819c51649bce2571a23b1b0cd41eae2f57fc3f8908c7ec9e7047efb65ca13
 fetch leptonica https://github.com/DanBloomberg/leptonica/archive/refs/tags/1.87.0.tar.gz fa2b40c5caea96d1bb93a97486262aed8731b69ce25a84a6bf5d25323e33f631
 
-COMMON=(-DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG" -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_PREFIX_PATH="$PREFIX")
+COMMON=(-DCMAKE_BUILD_TYPE=Release -DCMAKE_C_FLAGS_RELEASE="-O2 -DNDEBUG" -DCMAKE_CXX_FLAGS_RELEASE="-O2 -DNDEBUG" -DPACKAGE_VERSION=5.5.4 -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX="$PREFIX" -DCMAKE_PREFIX_PATH="$PREFIX")
 CFLAGS="-O2 -ffile-prefix-map=$ROOT=/src/tesseract -ffile-prefix-map=$WORK=/build/ocr"
 CXXFLAGS="$CFLAGS"
 LINKFLAGS=""
