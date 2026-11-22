@@ -119,3 +119,6 @@ times.txt
 # CodeQL and build artifacts
 _codeql_detected_source_root
 install-sh
+/build-ocr/
+!/build-tesseract-wasi.sh
+!/mcpone/leptonica-wasi.patch

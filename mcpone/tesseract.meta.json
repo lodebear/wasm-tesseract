@@ -1,0 +1,5 @@
+{
+  "resources": {"tessdata": {"kind": "asset", "read_only": true}},
+  "env": {"TESSDATA_PREFIX": "${tessdata}/fast"},
+  "description": "Offline image OCR with Tesseract's LSTM engine and separate language data."
+}

@@ -834,6 +834,10 @@ static int main1(int argc, char **argv) {
     renderers.push_back(nullptr);
   } else if (outputbase != nullptr) {
     PreloadRenderers(api, renderers, pagesegmode, outputbase);
+    // A denied output path must not be reported as a successful OCR command.
+    if (renderers.empty()) {
+      return EXIT_FAILURE;
+    }
   }
 
   if (!renderers.empty()) {

@@ -1,0 +1,105 @@
+diff --git a/src/utils1.c b/src/utils1.c
+index b8dedd5..889be0d 100644
+--- a/src/utils1.c
++++ b/src/utils1.c
+@@ -1104,7 +1104,7 @@ size_t  bufsize = 100;
+ /*---------------------------------------------------------------------*
+  *                           Timing procs                              *
+  *---------------------------------------------------------------------*/
+-#if !defined(_WIN32) && !defined(__Fuchsia__)
++#if !defined(_WIN32) && !defined(__Fuchsia__) && !defined(__wasi__)
+ 
+ #include <sys/time.h>
+ #include <sys/resource.h>
+@@ -1198,6 +1198,60 @@ struct timeval tv;
+     if (usec) *usec = (l_int32)tv.tv_usec;
+ }
+ 
++#elif defined(__wasi__)
++
++/* WASI exposes clocks, but not process CPU accounting via getrusage.
++ * These diagnostic timers measure monotonic elapsed time on this target. */
++#include <time.h>
++
++static struct timespec wasi_timer_start;
++
++void
++startTimer(void)
++{
++    clock_gettime(CLOCK_MONOTONIC, &wasi_timer_start);
++}
++
++l_float32
++stopTimer(void)
++{
++struct timespec now;
++    clock_gettime(CLOCK_MONOTONIC, &now);
++    return (l_float32)(now.tv_sec - wasi_timer_start.tv_sec) +
++           (l_float32)(now.tv_nsec - wasi_timer_start.tv_nsec) / 1.0e9f;
++}
++
++L_TIMER
++startTimerNested(void)
++{
++struct timespec *start = LEPT_CALLOC(1, sizeof(*start));
++    if (start) clock_gettime(CLOCK_MONOTONIC, start);
++    return start;
++}
++
++l_float32
++stopTimerNested(L_TIMER timer)
++{
++struct timespec now;
++struct timespec *start = timer;
++l_float32 elapsed;
++    if (!start) return 0.0f;
++    clock_gettime(CLOCK_MONOTONIC, &now);
++    elapsed = (l_float32)(now.tv_sec - start->tv_sec) +
++              (l_float32)(now.tv_nsec - start->tv_nsec) / 1.0e9f;
++    LEPT_FREE(start);
++    return elapsed;
++}
++
++void
++l_getCurrentTime(l_int32 *sec, l_int32 *usec)
++{
++struct timespec now;
++    clock_gettime(CLOCK_REALTIME, &now);
++    if (sec) *sec = (l_int32)now.tv_sec;
++    if (usec) *usec = (l_int32)(now.tv_nsec / 1000);
++}
++
+ #elif defined(__Fuchsia__) /* resource.h not implemented on Fuchsia. */
+ 
+     /* Timer functions are used for testing and debugging, and
+diff --git a/src/utils2.c b/src/utils2.c
+index e05abc3..81769fd 100644
+--- a/src/utils2.c
++++ b/src/utils2.c
+@@ -2684,7 +2684,12 @@ l_int32  ret;
+         return 1;
+     }
+ 
+-#if defined(__APPLE__)  /* iOS 11 does not support system() */
++#if defined(__wasi__)
++
++    L_ERROR("WASI runtime does not launch external programs\n", __func__);
++    ret = 1;
++
++#elif defined(__APPLE__)  /* iOS 11 does not support system() */
+ 
+   #if (defined(TARGET_OS_OSX) && TARGET_OS_OSX == 1)  /* Mac OS X */
+     ret = system(cmd);
+@@ -3306,7 +3311,11 @@ char  dirname[240];
+     if (makeTempDirname(dirname, sizeof(dirname), NULL) == 1)
+         return (char *)ERROR_PTR("failed to make dirname", __func__, NULL);
+ 
+-#ifndef _WIN32
++#if defined(__wasi__)
++    /* The OCR runtime uses memory I/O; wasi-libc has no mkstemp. */
++    return (char *)ERROR_PTR("named temporary files are unsupported on WASI",
++                            __func__, NULL);
++#elif !defined(_WIN32)
+ {
+     char    *pattern;
+     l_int32  fd;
